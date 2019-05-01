@@ -1,6 +1,7 @@
 'use strict';
 
 var KEY_ESC = 'Escape';
+var MAX_HASHTAGS_INPUT = 5;
 
 var COMMENTS = [
   'Всё отлично!',
@@ -38,6 +39,8 @@ var bigPictureCommentsLoaderButton = bigPicture.querySelector('.social__comments
 var bigPictureCloseButton = bigPicture.querySelector('#picture-cancel');
 
 var userPictureEditorBlock = document.querySelector('.img-upload__overlay');
+
+var editorHastagsInput = userPictureEditorBlock.querySelector('[name="hashtags"]');
 
 var generateRandomNumber = function (min, max) {
   return Math.floor(min + Math.random() * (max + 1 - min));
@@ -143,7 +146,7 @@ var closeUserEditorPopup = function () {
   document.removeEventListener('keydown', onEditorPopupEscKeydown);
 };
 var onEditorPopupEscKeydown = function (evt) {
-  if (evt.key === KEY_ESC) {
+  if (evt.key === KEY_ESC && evt.target !== editorHastagsInput) {
     closeUserEditorPopup();
   }
 };
@@ -154,4 +157,84 @@ uploadPictureInput.addEventListener('change', function () {
 var editorPin = userPictureEditorBlock.querySelector('.effect-level__pin');
 editorPin.addEventListener('mouseup', function () {
 
+});
+var imageUploadForm = usersPicturesContainer.querySelector('#upload-select-image');
+var imageUploadFormSubmitButton = imageUploadForm.querySelector('#upload-submit');
+var isElementDuplicatesInArray = function (element, array) {
+  var count = 0;
+
+  for (var i = 0; i < array.length; i++) {
+    if (element === array[i]) {
+      count++;
+    }
+    if (count === 2) {
+      return true;
+    }
+  }
+
+  return false;
+};
+var errorsOfHashtagsInput = function (hashtagsInput) {
+  var messages = [];
+  if (hashtagsInput.value.length === 0) {
+    return messages;
+  }
+
+  var hashtagsValidation = {
+    lattice: {
+      isValid: true,
+      message: 'Хештеги должны начинаться со знака #'
+    },
+    limit: {
+      isValid: true,
+      message: 'Нельзя указать более пяти хэш-тегов'
+    },
+    lengthLimit: {
+      isValid: true,
+      message: 'Длина каждого хештега не должна превышать 20 символов'
+    },
+    duplicates: {
+      isValid: true,
+      message: 'Один и тот же хэш-тег не может быть использован дважды'
+    }
+  };
+  var hashtags = hashtagsInput.value.toLowerCase().replace(/ /g, '').split(',');
+
+  if (hashtags.length > MAX_HASHTAGS_INPUT) {
+    hashtagsValidation.limit.isValid = false;
+  }
+
+  for (var x = 0; x < hashtags.length; x++) {
+    if (hashtags[x][0] !== '#') {
+      hashtagsValidation.lattice.isValid = false;
+    }
+    if (hashtags[x].length > 20) {
+      hashtagsValidation.lengthLimit.isValid = false;
+    }
+    if (isElementDuplicatesInArray(hashtags[x], hashtags)) {
+      hashtagsValidation.duplicates.isValid = false;
+    }
+  }
+
+  for (var reason in hashtagsValidation) {
+    if (hashtagsValidation.hasOwnProperty(reason)) {
+      if (!hashtagsValidation[reason]['isValid']) {
+        messages.push(hashtagsValidation[reason]['message']);
+      }
+    }
+  }
+
+  return messages;
+};
+
+imageUploadFormSubmitButton.addEventListener('click', function () {
+  var errors = errorsOfHashtagsInput(editorHastagsInput);
+
+  if (errors.length > 0) {
+    editorHastagsInput.setCustomValidity(errors.join('. '));
+  }
+});
+
+editorHastagsInput.addEventListener('input', function () {
+  editorHastagsInput.setCustomValidity('');
 });
